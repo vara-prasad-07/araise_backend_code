@@ -319,3 +319,72 @@ class PlankCoordinates:
                 feedback = "Get into plank position"
         
         return self.counter, feedback, int(angle), current_stage or "ready"
+
+class BenchPressCoordinates:
+    def __init__(self):
+        self.counter = 0
+        self.stage = None
+        self.angle_buffer = []
+        self.min_angle_threshold = 90   # Bottom position (elbow bent)
+        self.max_angle_threshold = 160  # Top position (arms extended)
+        
+    def smooth_angle(self, angle, buffer_size=5):
+        """Smooth angle measurements using a rolling average"""
+        self.angle_buffer.append(angle)
+        if len(self.angle_buffer) > buffer_size:
+            self.angle_buffer.pop(0)
+        return sum(self.angle_buffer) / len(self.angle_buffer)
+
+    def process_coordinates(self, coordinates):
+        """
+        Process coordinates for bench press (incline or flat)
+        Expected coordinates format: {
+            'right_shoulder': [x, y],
+            'right_elbow': [x, y],
+            'right_wrist': [x, y]
+        }
+        """
+        required_points = ['right_shoulder', 'right_elbow', 'right_wrist']
+        
+        if not CoordinateProcessor.validate_coordinates(coordinates, required_points):
+            return self.counter, "Position yourself properly", 0, "ready"
+        
+        # Get coordinates
+        shoulder = coordinates['right_shoulder']
+        elbow = coordinates['right_elbow']
+        wrist = coordinates['right_wrist']
+        
+        # Calculate and smooth angle
+        raw_angle = CoordinateProcessor.calculate_angle(shoulder, elbow, wrist)
+        angle = self.smooth_angle(raw_angle)
+        
+        feedback = "Position detected"
+        current_stage = self.stage
+        
+        # Bench press logic (incline or flat)
+        if angle > self.max_angle_threshold:
+            if self.stage != "up":
+                self.stage = "up"
+                current_stage = "up"
+            feedback = "Arms fully extended"
+            
+        elif angle < self.min_angle_threshold and self.stage == "up":
+            if self.stage != "down":
+                self.stage = "down"
+                current_stage = "down"
+                self.counter += 1
+                feedback = "Good rep! Press back up"
+            else:
+                feedback = "Hold the bottom position"
+                
+        elif self.min_angle_threshold <= angle <= self.max_angle_threshold:
+            if self.stage == "up":
+                feedback = "Lower slowly"
+            elif self.stage == "down":
+                feedback = "Press up"
+            else:
+                feedback = "Start with arms extended"
+        else:
+            feedback = f"Current angle: {int(angle)}°"
+        
+        return self.counter, feedback, int(angle), current_stage or "ready"

@@ -5,7 +5,7 @@ import asyncio
 from typing import Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from coordinate_exercises import BicepCurlCoordinates, SquatCoordinates, PushupCoordinates, PlankCoordinates
+from coordinate_exercises import BicepCurlCoordinates, SquatCoordinates, PushupCoordinates, PlankCoordinates,BenchPressCoordinates
 
 logging.basicConfig(level=logging.INFO)
 
@@ -34,7 +34,8 @@ class FastConnectionManager:
             "biceps": BicepCurlCoordinates(),
             "squats": SquatCoordinates(), 
             "pushups": PushupCoordinates(),
-            "plank": PlankCoordinates()
+            "plank": PlankCoordinates(),
+            "benchpress": BenchPressCoordinates()
         }
         
         self.active_connections[connection_id] = {
