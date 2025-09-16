@@ -5,7 +5,7 @@ import asyncio
 from typing import Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from coordinate_exercises import BicepCurlCoordinates, SquatCoordinates, PushupCoordinates, PlankCoordinates,BenchPressCoordinates
+from coordinate_exercises import BicepCurlCoordinates, SquatCoordinates, PushupCoordinates, PlankCoordinates,BenchPressCoordinates,RopePulldownCoordinates,BentTricepPullCoordinates,CrunchCoordinates,PullupCoordinates,ChestSupportedRowCoordinates,WideGripPulldownCoordinates,LegPressCoordinates,ChestSupportedShoulderPressCoordinates,OverheadShoulderPressCoordinates
 
 logging.basicConfig(level=logging.INFO)
 
@@ -35,7 +35,16 @@ class FastConnectionManager:
             "squats": SquatCoordinates(), 
             "pushups": PushupCoordinates(),
             "plank": PlankCoordinates(),
-            "benchpress": BenchPressCoordinates()
+            "benchpress": BenchPressCoordinates(),
+            "ropepulldown": RopePulldownCoordinates(),
+            "benttricep": BentTricepPullCoordinates(),
+            "crunch": CrunchCoordinates(),
+            "pullup": PullupCoordinates(),
+            "chestsupportedrow": ChestSupportedRowCoordinates(),
+            "widegrippulldown": WideGripPulldownCoordinates(),
+            "legpress": LegPressCoordinates(),
+            "chestsupportedshoulderpress": ChestSupportedShoulderPressCoordinates(),
+            "overheadshoulderpress": OverheadShoulderPressCoordinates()
         }
         
         self.active_connections[connection_id] = {
