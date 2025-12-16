@@ -5,7 +5,24 @@ import asyncio
 from typing import Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from coordinate_exercises import BicepCurlCoordinates, SquatCoordinates, PushupCoordinates, PlankCoordinates,BenchPressCoordinates,RopePulldownCoordinates,BentTricepPullCoordinates,CrunchCoordinates,PullupCoordinates,ChestSupportedRowCoordinates,WideGripPulldownCoordinates,LegPressCoordinates,ChestSupportedShoulderPressCoordinates,OverheadShoulderPressCoordinates
+from exercises import (
+    BicepCurlCoordinates,
+    SquatCoordinates,
+    PushupCoordinates,
+    PlankCoordinates,
+    BenchPressCoordinates,
+    RopePulldownCoordinates,
+    BentTricepPullCoordinates,
+    CrunchCoordinates,
+    PullupCoordinates,
+    ChestSupportedRowCoordinates,
+    WideGripPulldownCoordinates,
+    LegPressCoordinates,
+    ChestSupportedShoulderPressCoordinates,
+    OverheadShoulderPressCoordinates,
+)
+from utils.redis_client import redis_client
+from config import config
 
 logging.basicConfig(level=logging.INFO)
 
@@ -20,31 +37,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize Redis connection on startup"""
+    await redis_client.connect()
+    logging.info("🚀 Application startup complete")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close Redis connection on shutdown"""
+    await redis_client.disconnect()
+    logging.info("👋 Application shutdown complete")
+
+
 class FastConnectionManager:
+    """Manage multiple WebSocket connections with isolated exercise instances"""
+    
     def __init__(self):
-        # Store active connections and their exercise instances
         self.active_connections: Dict[str, Dict[str, Any]] = {}
     
-    def connect(self, websocket: WebSocket, exercise: str) -> str:
+    def connect(self, websocket: WebSocket, exercise: str, user_id: str) -> str:
         """Create a new connection with unique exercise instances"""
         connection_id = str(uuid.uuid4())
         
-        # Create coordinate-based exercise instances (much faster!)
+        # Create coordinate-based exercise instances with user_id for Redis
         exercise_instances = {
-            "biceps": BicepCurlCoordinates(),
-            "squats": SquatCoordinates(), 
-            "pushups": PushupCoordinates(),
-            "plank": PlankCoordinates(),
-            "benchpress": BenchPressCoordinates(),
-            "ropepulldown": RopePulldownCoordinates(),
-            "benttricep": BentTricepPullCoordinates(),
-            "crunch": CrunchCoordinates(),
-            "pullup": PullupCoordinates(),
-            "chestsupportedrow": ChestSupportedRowCoordinates(),
-            "widegrippulldown": WideGripPulldownCoordinates(),
-            "legpress": LegPressCoordinates(),
-            "chestsupportedshoulderpress": ChestSupportedShoulderPressCoordinates(),
-            "overheadshoulderpress": OverheadShoulderPressCoordinates()
+            "biceps": BicepCurlCoordinates(user_id=user_id),
+            "squats": SquatCoordinates(user_id=user_id), 
+            "pushups": PushupCoordinates(user_id=user_id),
+            "plank": PlankCoordinates(user_id=user_id),
+            "benchpress": BenchPressCoordinates(user_id=user_id),
+            "ropepulldown": RopePulldownCoordinates(user_id=user_id),
+            "benttricep": BentTricepPullCoordinates(user_id=user_id),
+            "crunch": CrunchCoordinates(user_id=user_id),
+            "pullup": PullupCoordinates(user_id=user_id),
+            "chestsupportedrow": ChestSupportedRowCoordinates(user_id=user_id),
+            "widegrippulldown": WideGripPulldownCoordinates(user_id=user_id),
+            "legpress": LegPressCoordinates(user_id=user_id),
+            "chestsupportedshoulderpress": ChestSupportedShoulderPressCoordinates(user_id=user_id),
+            "overheadshoulderpress": OverheadShoulderPressCoordinates(user_id=user_id)
         }
         
         self.active_connections[connection_id] = {
@@ -81,30 +114,50 @@ manager = FastConnectionManager()
 
 @app.get("/")
 async def root():
-    return {"message": "Fast Coordinate-based Exercise Server", "mode": "coordinates"}
+    return {
+        "message": "Fast Coordinate-based Exercise Server",
+        "mode": "coordinates",
+        "redis_enabled": redis_client.is_available(),
+        "version": "2.0"
+    }
 
 @app.get("/stats")
 async def get_stats():
     """Get current connection statistics"""
-    return manager.get_stats()
+    return {
+        "stats": manager.get_stats(),
+        "server": "coordinate_processor"
+    }
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    redis_status = "connected" if redis_client.is_available() else "disconnected"
+    
     return {
         "status": "healthy",
         "mode": "coordinate_processing",
-        "active_connections": len(manager.active_connections)
+        "active_connections": len(manager.active_connections),
+        "redis_status": redis_status,
+        "features": {
+            "state_persistence": redis_client.is_available(),
+            "workout_history": config.ENABLE_WORKOUT_HISTORY,
+            "leaderboards": config.ENABLE_LEADERBOARDS
+        }
     }
 
 @app.websocket("/ws/{exercise}")
-async def websocket_endpoint(websocket: WebSocket, exercise: str):
+async def websocket_endpoint(websocket: WebSocket, exercise: str, user_id: str = None):
     await websocket.accept()
     
+    # Generate user_id if not provided
+    if not user_id:
+        user_id = str(uuid.uuid4())
+    
     # Create a unique connection with dedicated exercise instances
-    connection_id = manager.connect(websocket, exercise)
+    connection_id = manager.connect(websocket, exercise, user_id)
     connection_data = manager.get_connection(connection_id)
-    print(connection_data)
+    
     if not connection_data:
         await websocket.close(code=1003)
         return
@@ -138,7 +191,7 @@ async def websocket_endpoint(websocket: WebSocket, exercise: str):
                 
                 # Process coordinates super fast (no video processing!)
                 reps, feedback, angle, stage = current_exercise_instance.process_coordinates(coordinates)
-                print("sending response to client")
+                
                 # Instant response with exercise data
                 response = {
                     "exercise": exercise,
@@ -149,7 +202,7 @@ async def websocket_endpoint(websocket: WebSocket, exercise: str):
                     "connection_id": connection_id[:8],  # Short ID for debugging
                     "processed_at": asyncio.get_event_loop().time()
                 }
-                print(response)
+                
                 await websocket.send_json(response)
                 
             except json.JSONDecodeError:
