@@ -6,20 +6,66 @@ from typing import Dict, Any
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from exercises import (
+    # Upper body
     BicepCurlCoordinates,
-    SquatCoordinates,
     PushupCoordinates,
-    PlankCoordinates,
     BenchPressCoordinates,
     RopePulldownCoordinates,
     BentTricepPullCoordinates,
-    CrunchCoordinates,
     PullupCoordinates,
     ChestSupportedRowCoordinates,
     WideGripPulldownCoordinates,
+    # Chest
+    InclineDumbbellPressCoordinates,
+    InclineBarbellBenchPressCoordinates,
+    FlatBarbellBenchPressCoordinates,
+    RopePulldownChestCoordinates,
+    ChestFlyesCoordinates,
+    ChestDipsCoordinates,
+    # Back
+    NeutralGripPullupCoordinates,
+    CableLatPulldownCoordinates,
+    NeutralGripPulldownCoordinates,
+    HorizontalNeutralGripRowCoordinates,
+    WeightedPullupCoordinates,
+    BarbellBentOverRowCoordinates,
+    LatPulldownCoordinates,
+    SeatedCableRowCoordinates,
+    DeadliftCoordinates,
+    # Lower body
+    SquatCoordinates,
     LegPressCoordinates,
+    LegPressWideStanceCoordinates,
+    LegPressFeetHighCoordinates,
+    BackSquatCoordinates,
+    RomanianDeadliftCoordinates,
+    HipThrustCoordinates,
+    BulgarianSplitSquatCoordinates,
+    LightSquatsCoordinates,
+    BoxJumpsCoordinates,
+    # Core
+    PlankCoordinates,
+    CrunchCoordinates,
+    # Shoulders
     ChestSupportedShoulderPressCoordinates,
     OverheadShoulderPressCoordinates,
+    CableLateralRaisesCoordinates,
+    CableRopePressCoordinates,
+    FrontRaisesCoordinates,
+    DumbbellLateralRaisesCoordinates,
+    RearDeltFlyCoordinates,
+    ShoulderPressCoordinates,
+    SeatedOverheadPressCoordinates,
+    CableRopeFacePullCoordinates,
+    # Biceps
+    EZBarPreacherCurlsCoordinates,
+    InclineDumbbellCurlsCoordinates,
+    HammerCurlsCoordinates,
+    BarbellCurlsCoordinates,
+    # Triceps
+    TricepExtensionPushupsCoordinates,
+    TricepRopePulldownCoordinates,
+    TricepRopePushdownCoordinates,
 )
 from utils.redis_client import redis_client
 from config import config
@@ -62,22 +108,74 @@ class FastConnectionManager:
         """Create a new connection with unique exercise instances"""
         connection_id = str(uuid.uuid4())
         
-        # Create coordinate-based exercise instances with user_id for Redis
+        # ✅ CLEANED: 54 unique exercises (duplicates removed)
         exercise_instances = {
-            "biceps": BicepCurlCoordinates(user_id=user_id),
-            "squats": SquatCoordinates(user_id=user_id), 
-            "pushups": PushupCoordinates(user_id=user_id),
+            # CHEST EXERCISES (8)
+            "push-ups": PushupCoordinates(user_id=user_id),
+            "incline-dumbbell-press": InclineDumbbellPressCoordinates(user_id=user_id),
+            "incline-barbell-bench-press": InclineBarbellBenchPressCoordinates(user_id=user_id),
+            "flat-barbell-bench-press": FlatBarbellBenchPressCoordinates(user_id=user_id),
+            "bench_press": BenchPressCoordinates(user_id=user_id),
+            "rope-pulldown-chest": RopePulldownChestCoordinates(user_id=user_id),
+            "chest-flyes": ChestFlyesCoordinates(user_id=user_id),
+            "chest-dips": ChestDipsCoordinates(user_id=user_id),
+            
+            # BACK & LATS EXERCISES (13)
+            "wide-grip-pull-ups": WideGripPulldownCoordinates(user_id=user_id),
+            "neutral-grip-pull-ups": NeutralGripPullupCoordinates(user_id=user_id),
+            "chest-supported-rows": ChestSupportedRowCoordinates(user_id=user_id),
+            "cable-lat-pulldown": CableLatPulldownCoordinates(user_id=user_id),
+            "neutral-grip-pulldown": NeutralGripPulldownCoordinates(user_id=user_id),
+            "horizontal-neutral-grip-row": HorizontalNeutralGripRowCoordinates(user_id=user_id),
+            "weighted-pull-ups": WeightedPullupCoordinates(user_id=user_id),
+            "barbell-bent-over-row": BarbellBentOverRowCoordinates(user_id=user_id),
+            "lat-pulldown": LatPulldownCoordinates(user_id=user_id),
+            "pull-ups": PullupCoordinates(user_id=user_id),
+            "seated-cable-row": SeatedCableRowCoordinates(user_id=user_id),
+            "deadlifts": DeadliftCoordinates(user_id=user_id),
+            "deadlift_trap_bar": DeadliftCoordinates(user_id=user_id),
+            
+            # LEGS EXERCISES (11)
+            "squats": SquatCoordinates(user_id=user_id),
+            "leg-press": LegPressCoordinates(user_id=user_id),
+            "leg_press_close_stance": LegPressCoordinates(user_id=user_id),
+            "leg_press_wide_stance": LegPressWideStanceCoordinates(user_id=user_id),
+            "leg_press_feet_high": LegPressFeetHighCoordinates(user_id=user_id),
+            "back-squat": BackSquatCoordinates(user_id=user_id),
+            "romanian-deadlift": RomanianDeadliftCoordinates(user_id=user_id),
+            "hip-thrust": HipThrustCoordinates(user_id=user_id),
+            "bulgarian-split-squat": BulgarianSplitSquatCoordinates(user_id=user_id),
+            "light-squats": LightSquatsCoordinates(user_id=user_id),
+            "box-jumps": BoxJumpsCoordinates(user_id=user_id),
+            
+            # SHOULDERS EXERCISES (10)
+            "chest-supported-shoulder-press": ChestSupportedShoulderPressCoordinates(user_id=user_id),
+            "cable-lateral-raises": CableLateralRaisesCoordinates(user_id=user_id),
+            "overhead-shoulder-press": OverheadShoulderPressCoordinates(user_id=user_id),
+            "cable-rope-press": CableRopePressCoordinates(user_id=user_id),
+            "front-raises": FrontRaisesCoordinates(user_id=user_id),
+            "dumbbell-lateral-raises": DumbbellLateralRaisesCoordinates(user_id=user_id),
+            "rear-delt-fly": RearDeltFlyCoordinates(user_id=user_id),
+            "shoulder-press": ShoulderPressCoordinates(user_id=user_id),
+            "seated-overhead-press": SeatedOverheadPressCoordinates(user_id=user_id),
+            "cable_rope_face_pull": CableRopeFacePullCoordinates(user_id=user_id),
+            
+            # BICEPS EXERCISES (5)
+            "ezbar-preacher-curls": EZBarPreacherCurlsCoordinates(user_id=user_id),
+            "incline-dumbbell-curls": InclineDumbbellCurlsCoordinates(user_id=user_id),
+            "hammer-curls": HammerCurlsCoordinates(user_id=user_id),
+            "barbell-curls": BarbellCurlsCoordinates(user_id=user_id),
+            "bicep_curl": BicepCurlCoordinates(user_id=user_id),
+            
+            # TRICEPS EXERCISES (4)
+            "tricep-extension-push-ups": TricepExtensionPushupsCoordinates(user_id=user_id),
+            "bent-tricep-pull": BentTricepPullCoordinates(user_id=user_id),
+            "tricep-rope-pulldown": TricepRopePulldownCoordinates(user_id=user_id),
+            "tricep_rope_pushdown": TricepRopePushdownCoordinates(user_id=user_id),
+            
+            # CORE EXERCISES (2)
             "plank": PlankCoordinates(user_id=user_id),
-            "benchpress": BenchPressCoordinates(user_id=user_id),
-            "ropepulldown": RopePulldownCoordinates(user_id=user_id),
-            "benttricep": BentTricepPullCoordinates(user_id=user_id),
-            "crunch": CrunchCoordinates(user_id=user_id),
-            "pullup": PullupCoordinates(user_id=user_id),
-            "chestsupportedrow": ChestSupportedRowCoordinates(user_id=user_id),
-            "widegrippulldown": WideGripPulldownCoordinates(user_id=user_id),
-            "legpress": LegPressCoordinates(user_id=user_id),
-            "chestsupportedshoulderpress": ChestSupportedShoulderPressCoordinates(user_id=user_id),
-            "overheadshoulderpress": OverheadShoulderPressCoordinates(user_id=user_id)
+            "crunches": CrunchCoordinates(user_id=user_id),
         }
         
         self.active_connections[connection_id] = {
@@ -127,6 +225,84 @@ async def get_stats():
     return {
         "stats": manager.get_stats(),
         "server": "coordinate_processor"
+    }
+
+@app.get("/exercises")
+async def get_all_exercises():
+    """Get list of all available exercises with their unique identifiers"""
+    return {
+        "total_exercises": 53,
+        "exercises": {
+            "chest": [
+                {"id": "push-ups", "name": "Push-ups", "has_video": True},
+                {"id": "incline-dumbbell-press", "name": "Incline Dumbbell Press", "has_video": True},
+                {"id": "incline-barbell-bench-press", "name": "Incline Barbell Bench Press", "has_video": True},
+                {"id": "flat-barbell-bench-press", "name": "Flat Barbell Bench Press", "has_video": True},
+                {"id": "bench_press", "name": "Bench Press", "has_video": True},
+                {"id": "rope-pulldown-chest", "name": "Rope Pulldown (Chest)", "has_video": True},
+                {"id": "chest-flyes", "name": "Chest Flyes", "has_video": True},
+                {"id": "chest-dips", "name": "Chest Dips (leaning forward)", "has_video": False}
+            ],
+            "back": [
+                {"id": "wide-grip-pull-ups", "name": "Wide Grip Pull-ups", "has_video": True},
+                {"id": "neutral-grip-pull-ups", "name": "Neutral Grip Pull-ups", "has_video": True},
+                {"id": "chest-supported-rows", "name": "Chest Supported Row", "has_video": True},
+                {"id": "cable-lat-pulldown", "name": "Cable Lat Pulldown", "has_video": True},
+                {"id": "neutral-grip-pulldown", "name": "Neutral Grip Pulldown", "has_video": True},
+                {"id": "horizontal-neutral-grip-row", "name": "Horizontal Neutral Grip Row", "has_video": True},
+                {"id": "weighted-pull-ups", "name": "Weighted Pull-ups", "has_video": True},
+                {"id": "barbell-bent-over-row", "name": "Barbell Bent-over Row", "has_video": True},
+                {"id": "lat-pulldown", "name": "Lat Pulldown", "has_video": True},
+                {"id": "pull-ups", "name": "Pull-ups", "has_video": True},
+                {"id": "seated-cable-row", "name": "Seated Cable Row", "has_video": True},
+                {"id": "deadlifts", "name": "Deadlift (Conventional)", "has_video": False},
+                {"id": "deadlift_trap_bar", "name": "Deadlift (Trap Bar)", "has_video": False}
+            ],
+            "legs": [
+                {"id": "squats", "name": "Squats", "has_video": True},
+                {"id": "leg-press", "name": "Leg Press", "has_video": True},
+                {"id": "leg_press_close_stance", "name": "Leg Press (Close Stance)", "has_video": True},
+                {"id": "leg_press_wide_stance", "name": "Leg Press (Wide Stance)", "has_video": True},
+                {"id": "leg_press_feet_high", "name": "Leg Press (Feet High)", "has_video": True},
+                {"id": "back-squat", "name": "Back Squat", "has_video": True},
+                {"id": "romanian-deadlift", "name": "Romanian Deadlift (RDL)", "has_video": False},
+                {"id": "hip-thrust", "name": "Hip Thrust", "has_video": False},
+                {"id": "bulgarian-split-squat", "name": "Bulgarian Split Squat", "has_video": False},
+                {"id": "light-squats", "name": "Light Squats", "has_video": True},
+                {"id": "box-jumps", "name": "Box Jumps", "has_video": False}
+            ],
+            "shoulders": [
+                {"id": "chest-supported-shoulder-press", "name": "Chest Supported Shoulder Press", "has_video": True},
+                {"id": "cable-lateral-raises", "name": "Cable Lateral Raises", "has_video": True},
+                {"id": "overhead-shoulder-press", "name": "Overhead Shoulder Press", "has_video": True},
+                {"id": "cable-rope-press", "name": "Cable Rope Press", "has_video": True},
+                {"id": "front-raises", "name": "Front Raises", "has_video": True},
+                {"id": "dumbbell-lateral-raises", "name": "Dumbbell Lateral Raises", "has_video": True},
+                {"id": "rear-delt-fly", "name": "Rear Delt Fly", "has_video": True},
+                {"id": "shoulder-press", "name": "Shoulder Press", "has_video": True},
+                {"id": "seated-overhead-press", "name": "Seated Overhead Press", "has_video": True},
+                {"id": "cable_rope_face_pull", "name": "Cable Rope Face Pull", "has_video": True}
+            ],
+            "biceps": [
+                {"id": "ezbar-preacher-curls", "name": "EZ Bar Preacher Curls", "has_video": True},
+                {"id": "incline-dumbbell-curls", "name": "Incline Dumbbell Curls", "has_video": True},
+                {"id": "hammer-curls", "name": "Hammer Curls", "has_video": True},
+                {"id": "barbell-curls", "name": "Barbell Curls", "has_video": True},
+                {"id": "bicep_curl", "name": "Bicep Curl", "has_video": True}
+            ],
+            "triceps": [
+                {"id": "tricep-extension-push-ups", "name": "Tricep Extension Push-ups", "has_video": True},
+                {"id": "bent-tricep-pull", "name": "Bent Tricep Pull", "has_video": True},
+                {"id": "tricep-rope-pulldown", "name": "Tricep Rope Pulldown", "has_video": True},
+                {"id": "tricep_rope_pushdown", "name": "Tricep Rope Pushdown", "has_video": True}
+            ],
+            "core": [
+                {"id": "plank", "name": "Plank", "has_video": True},
+                {"id": "crunches", "name": "Crunches", "has_video": True}
+            ]
+        },
+        "usage": "Use the 'id' field to connect: ws://your-server/ws/{exercise_id}?user_id=your_user_id",
+        "note": "Removed duplicate aliases for cleaner API. Total: 53 unique exercises."
     }
 
 @app.get("/health")
